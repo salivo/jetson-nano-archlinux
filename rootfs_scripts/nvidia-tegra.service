@@ -1,0 +1,10 @@
+[Unit]
+Description=The NVIDIA tegra init script
+
+[Service]
+type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/nvidia-tegra-init-script
+
+[Install]
+WantedBy=multi-user.target
