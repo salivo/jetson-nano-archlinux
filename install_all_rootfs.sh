@@ -37,10 +37,11 @@ fi
 
 # Run package installation inside proot
 echo_green "[*] Init pacman keys ..."
-proot -R "$ROOTFS_DIR" -q "$QEMU_PATH" /bin/bash -c "pacman-key --init"
+pacman-key --gpgdir="$ROOTFS_DIR"/etc/pacman.d/gnupg --config="$ROOTFS_DIR"/etc/pacman.conf --populate-from="$ROOTFS_DIR"/usr/share/pacman/keyrings --init
 proot -R "$ROOTFS_DIR" -q "$QEMU_PATH" /bin/bash -c "pacman-key --populate archlinuxarm"
+
 echo_green "[*] Packages to install: ${PACKAGES[*]}"
-sudo pacman -Suy "${PACKAGES[@]}" --noconfirm  --sysroot rootfs
+sudo pacman -Sy "${PACKAGES[@]}"  --sysroot rootfs
 # Enable services
 if [[ ${#Services[@]} -gt 0 ]]; then
     echo_green "[*] Enabling services: ${Services[*]}"
