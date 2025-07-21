@@ -1,0 +1,7 @@
+# mkinitcpio preset file for the 'linux-aarch64-nvidia-lt4' package
+
+ALL_config="/etc/mkinitcpio.conf"
+
+PRESETS=('default')
+
+default_image="/boot/initrd"

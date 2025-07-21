@@ -64,24 +64,19 @@ else
     echo_green "[*] Set hostname to: $base_hostname"
 fi
 
-# === Disable mkinitcpio hook ===
-if [[ -f "$MKINITCPIO_HOOK" ]]; then
-    echo_green "[*] Disabling mkinitcpio pacman hook ..."
-    mv "$MKINITCPIO_HOOK" "$MKINITCPIO_HOOK.disabled"
-fi
+# === Patch mkinitcpio ===
 
-# === Set IgnorePkg ===
-PACMAN_CONF="$ROOTFS/etc/pacman.conf"
+echo_green "[*] Patching mkinitcpio ..."
 
-echo_green "[*] Setting IgnorePkg=linux-aarch64 in pacman.conf ..."
+# Patch mkinitcpio.conf with desired HOOKS
+MKINITCPIO_CONF="$ROOTFS/etc/mkinitcpio.conf"
+echo_green "[*] Updating mkinitcpio.conf HOOKS ..."
 
-# If line with IgnorePkg exists commented or uncommented, replace it; else append
-if grep -q -E '^\s*#?\s*IgnorePkg\s*=' "$PACMAN_CONF"; then
-    # Replace first matching IgnorePkg line (commented or not) with uncommented setting
-    sed -i '0,/^\s*#\?\s*IgnorePkg\s*=.*/s//IgnorePkg = linux-aarch64/' "$PACMAN_CONF"
+if [[ -f "$MKINITCPIO_CONF" ]]; then
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block filesystems fsck)/' "$MKINITCPIO_CONF"
 else
-    # Append at the end
-    echo "IgnorePkg = linux-aarch64" >> "$PACMAN_CONF"
+    echo "[!] mkinitcpio.conf not found!" >&2
+    exit 1
 fi
 
 # === Copy custom service files ===
@@ -95,7 +90,38 @@ rm "$RESOLV_CONF"
 touch "$RESOLV_CONF"
 echo -e "nameserver 1.1.1.1\nnameserver 8.8.8.8" > "$RESOLV_CONF"
 
-# Fix ownership and permissions (needs sudo)
+
+# === Add custom Jetson-Nano repository after last repo section ===
+echo_green "[*] Adding Jetson-Nano repository to pacman.conf ..."
+
+tmpfile="$(mktemp)"
+awk '
+  /^\[.*\]/ {
+    if (last_section_start) {
+      last_section_end = NR - 1
+    }
+    last_section_start = NR
+  }
+  { lines[NR] = $0 }
+  END {
+    # If file ends and last_section_end not set, set it to last line
+    if (!last_section_end) last_section_end = NR
+
+    for (i = 1; i <= NR; i++) {
+      print lines[i]
+      if (i == last_section_end) {
+        print ""
+        print "[jetson-nano]"
+        print "Server = https://salivo.github.io/jetson-nano-archlinux-packages/aarch64/"
+      }
+    }
+  }
+' "$PACMAN_CONF" > "$tmpfile"
+
+mv "$tmpfile" "$PACMAN_CONF"
+
+
+# Fix config ownership and permissions 
 REAL_USER=${SUDO_USER:-$(whoami)}
 chown $REAL_USER:$REAL_USER ./config.conf
 

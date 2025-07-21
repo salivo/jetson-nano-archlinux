@@ -35,13 +35,25 @@ if [[ ! -f "$ROOTFS_DIR$QEMU_PATH" ]]; then
     cp "$QEMU_PATH" "$ROOTFS_DIR$QEMU_PATH"
 fi
 
-# Run package installation inside proot
+# Run key installation inside proot
 echo_green "[*] Init pacman keys ..."
 pacman-key --gpgdir="$ROOTFS_DIR"/etc/pacman.d/gnupg --config="$ROOTFS_DIR"/etc/pacman.conf --populate-from="$ROOTFS_DIR"/usr/share/pacman/keyrings --init
 proot -R "$ROOTFS_DIR" -q "$QEMU_PATH" /bin/bash -c "pacman-key --populate archlinuxarm"
+# recieve and trust https://github.com/salivo/jetson-nano-archlinux-packages keys
+gpg --keyserver keyserver.ubuntu.com --recv-keys D679273A3A38E9F9C7FA081BC1FFDBCB3F3EFB25
+gpg --export D679273A3A38E9F9C7FA081BC1FFDBCB3F3EFB25 > salivo-key.gpg
+install -Dm644 salivo-key.gpg "$ROOTFS/root/salivo-key.gpg"
+proot -R "$ROOTFS_DIR" -q "$QEMU_PATH" /bin/bash -c "pacman-key --add /root/salivo-key.gpg"
+proot -R "$ROOTFS_DIR" -q "$QEMU_PATH" /bin/bash -c "pacman-key --lsign-key D679273A3A38E9F9C7FA081BC1FFDBCB3F3EFB25"
+rm $ROOTFS/root/salivo-key.gpg salivo-key.gpg
 
+# install needed packages
+echo_green "[*] Installing jetson nano system packages"
+yes | pacman -Sy linux-aarch64-nvidia-l4t --sysroot rootfs
+
+# install others packages
 echo_green "[*] Packages to install: ${PACKAGES[*]}"
-sudo pacman -Suy "${PACKAGES[@]}" --noconfirm  --sysroot rootfs
+pacman -Sy "${PACKAGES[@]}" --noconfirm  --sysroot rootfs
 
 # Enable services
 if [[ ${#Services[@]} -gt 0 ]]; then
@@ -50,6 +62,7 @@ if [[ ${#Services[@]} -gt 0 ]]; then
         proot -0 -r "$ROOTFS_DIR" -q "$QEMU_PATH" /usr/bin/systemctl enable "$service"
     done
 fi
-
+# Generate ramfs
+proot -R "$ROOTFS_DIR" -q "$QEMU_PATH" /bin/bash -c "mkinitcpio -P"
 
 echo_green "[✔] Done."
