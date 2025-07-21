@@ -91,34 +91,13 @@ touch "$RESOLV_CONF"
 echo -e "nameserver 1.1.1.1\nnameserver 8.8.8.8" > "$RESOLV_CONF"
 
 
-# === Add custom Jetson-Nano repository after last repo section ===
+# === Add custom Jetson-Nano repository ===
 echo_green "[*] Adding Jetson-Nano repository to pacman.conf ..."
+cat <<EOF >> "$PACMAN_CONF"
 
-tmpfile="$(mktemp)"
-awk '
-  /^\[.*\]/ {
-    if (last_section_start) {
-      last_section_end = NR - 1
-    }
-    last_section_start = NR
-  }
-  { lines[NR] = $0 }
-  END {
-    # If file ends and last_section_end not set, set it to last line
-    if (!last_section_end) last_section_end = NR
-
-    for (i = 1; i <= NR; i++) {
-      print lines[i]
-      if (i == last_section_end) {
-        print ""
-        print "[jetson-nano]"
-        print "Server = https://salivo.github.io/jetson-nano-archlinux-packages/aarch64/"
-      }
-    }
-  }
-' "$PACMAN_CONF" > "$tmpfile"
-
-mv "$tmpfile" "$PACMAN_CONF"
+[jetson-nano]
+Server = https://salivo.github.io/jetson-nano-archlinux-packages/aarch64/
+EOF
 
 
 # Fix config ownership and permissions 

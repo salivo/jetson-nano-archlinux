@@ -53,7 +53,7 @@ yes | pacman -Sy linux-aarch64-nvidia-l4t --sysroot rootfs
 
 # install others packages
 echo_green "[*] Packages to install: ${PACKAGES[*]}"
-pacman -Sy "${PACKAGES[@]}" --noconfirm  --sysroot rootfs
+pacman -Suy "${PACKAGES[@]}" --noconfirm  --sysroot rootfs
 
 # Enable services
 if [[ ${#Services[@]} -gt 0 ]]; then
