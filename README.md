@@ -1,2 +1,9 @@
 # jetson-nano-archlinux
-Bruh
+run 
+```bash
+sudo ./run_all.sh 
+```
+then flash
+```bash
+sudo ./flash_rootfs.sh
+```
