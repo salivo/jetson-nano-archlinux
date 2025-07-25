@@ -93,12 +93,16 @@ echo -e "nameserver 1.1.1.1\nnameserver 8.8.8.8" > "$RESOLV_CONF"
 
 # === Add custom Jetson-Nano repository ===
 echo_green "[*] Adding Jetson-Nano repository to pacman.conf ..."
-cat <<EOF >> "$PACMAN_CONF"
-
-[jetson-nano]
+REPO_NAME="[jetson-nano]"
+REPO_BLOCK=$(cat <<EOF
+$REPO_NAME
 Server = https://salivo.github.io/jetson-nano-archlinux-packages/aarch64/
 EOF
+)
 
+FILE="$ROOTFS/etc/pacman.conf"
+
+grep -Fxq "$REPO_NAME" "$FILE" || echo -e "\n$REPO_BLOCK" | sudo tee -a "$FILE"
 
 # Fix config ownership and permissions 
 REAL_USER=${SUDO_USER:-$(whoami)}

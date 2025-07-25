@@ -69,7 +69,7 @@ mount "$PART" "$MOUNT_POINT"
 
 # Copy rootfs
 echo "Cleaning all from $MOUNT_POINT/"
-rm -rf "$MOUNT_POINT/*"
+rm -rf "$MOUNT_POINT"/*
 
 # Copy rootfs
 echo "Copying rootfs from $ROOTFS_DIR to $MOUNT_POINT ..."
